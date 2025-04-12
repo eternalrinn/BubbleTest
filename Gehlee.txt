@@ -1,0 +1,84 @@
+-GET CRATES
+
+local rendered = game.Workspace:WaitForChild("Rendered")
+local crateChild = rendered:GetChildren() 
+local player = game.Players.LocalPlayer
+
+local function GetTreasures()
+    if getgenv().Chest == false then return end
+
+	local char = player.Character or player.CharacterAdded:Wait()
+	local human = char:FindFirstChild("Humanoid")
+	local humanoidRootPart = char:FindFirstChild("HumanoidRootPart")
+	if not (human and humanoidRootPart) then return end
+	local lastPosition = humanoidRootPart.Position
+	local setPos = CFrame.new(lastPosition)
+
+
+	-- anchor human
+	for _, part in pairs(char:GetChildren()) do
+		if part:IsA("BasePart") then
+			part.Anchored = true
+		end
+	end
+
+	for _, getCrate in pairs(crateChild) do
+		local checkUnwanted = getCrate:GetChildren()
+		for _, unWanted in pairs(checkUnwanted) do
+			if not unWanted.Name:find("Coming") and not unWanted.Name:find("Egg") then
+				if getCrate.Name == "Chunker" then
+					local chestChildren = getCrate:GetChildren()
+					for _, getChest in pairs(chestChildren) do
+						local chestParts = getChest:GetChildren()
+						for _, chestChild in pairs(chestParts) do
+							if (chestChild:IsA("Part") or chestChild:IsA("MeshPart")) and
+							   not chestChild.Name:find("Coming") and
+							   not chestChild.Name:find("Egg") then
+
+								local partLocation = chestChild.CFrame
+								wait(0.3)
+								humanoidRootPart.CFrame = partLocation
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+
+	-- return to original position
+    while humanoidRootPart.CFrame ~= setPos do
+        wait(1)
+        humanoidRootPart.CFrame = setPos
+    end 
+
+
+	-- disable anchor
+	for _, part in pairs(char:GetChildren()) do
+		if part:IsA("BasePart") then
+			part.Anchored = false
+		end
+	end
+end
+
+local function connectChunker(chunker)
+	chunker.DescendantAdded:Connect(function(descendant)
+		if (descendant:IsA("Part") or descendant:IsA("MeshPart")) and not descendant.Name:find("Coming") and not descendant.Name:find("Egg") then
+			GetTreasures()
+		end
+	end)
+end
+
+for _, crate in pairs(rendered:GetChildren()) do
+	if crate.Name == "Chunker" then
+		connectChunker(crate)
+	end
+end
+
+rendered.ChildAdded:Connect(function(child)
+    if child.Name == "Chunker" then
+        connectChunker(child)
+    end
+end)
+
+GetTreasures()
